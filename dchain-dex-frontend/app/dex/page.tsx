@@ -13,7 +13,8 @@ const DCHAINDEX: NextPage = () => {
   });
 
   const TOKEN_CONTRACT_ADDRESS = "0x2AAC535db31DB35D13AECe36Ea7954A2089D55bE";
-  const DEX_CONTRACT_ADDRESS = "0xB86800BA7D0b25309726511f54F1e3D92457a8E4";
+  const DEX_CONTRACT_ADDRESS = "0x311C424046c1679274D54663e7e4A054Af0Babb0";
+  // earlier v1 0xB86800BA7D0b25309726511f54F1e3D92457a8E4
 
   const activeAccount = useActiveAccount();
   const address = activeAccount?.address;
@@ -39,8 +40,10 @@ const DCHAINDEX: NextPage = () => {
   const { data: tokenBalance, isLoading: loadtokenbalance } = useReadContract({ 
     contract: tokenContract, 
     method: "function balanceOf(address account) view returns (uint256)", 
-    params: [address!] 
+    params: [address!]
   });
+
+  console.log(tokenBalance,"token balance", tokenBalance?.valueOf(),tokenBalance?.toString());
 
   // Get native balance and LP token balance
   const { data: nativeBalance, isError } = useWalletBalance({
@@ -54,9 +57,11 @@ const DCHAINDEX: NextPage = () => {
 
   const { data: contractTokenBalance } = useReadContract({ 
     contract: dexContract, 
-    method: "function getTokensInContract() view returns (uint256)", 
-    params: [] 
+    method: "function getTokensInContract(address token) view returns (uint256)", 
+    params: [TOKEN_CONTRACT_ADDRESS] 
   });
+
+  console.log(contractTokenBalance,"contract tken balance", contractTokenBalance?.toString());
 
   // State for the contract balance and the values to swap
   const [contractBalance, setContractBalance] = useState<String>("0");
@@ -66,22 +71,36 @@ const DCHAINDEX: NextPage = () => {
   const [isLoading, setIsLoading] = useState<Boolean>(false);
   const [minTokens, setMinTokens] = useState<String>("0");
 
+  const { data: contractbalance} = useReadContract({ 
+    contract: dexContract, 
+    method: "function getNativeContractBalance() view returns (uint256)", 
+    params: [] 
+  })
+
+  console.log(contractbalance?.toString(),"contract balance");
+
   // Get the amount of tokens to get based on the value to swap
   const { data: amountToGet, isLoading: load } = useReadContract({ 
     contract: dexContract, 
-    method: "function getAmountOfTokens(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) view returns (uint256)", 
+    method: "function getAmountOfTokens(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) view returns (uint256)",
     params: currentFrom === "native"
       ? [
           toWei(nativeValue as string || "0"),
-          toWei(contractBalance as string || "0"),
-          contractTokenBalance?.valueOf(),
+          toWei(contractbalance?.toString() as string || "0"),
+          toWei(contractTokenBalance?.toString() as string || "0"),
         ]
       : [
         toWei(tokenValue as string || "0"),
-        contractTokenBalance?.valueOf(),
-        toWei(contractBalance as string || "0"),
+        toWei(contractTokenBalance?.toString() as string || "0"),
+        toWei(contractbalance?.toString() as string || "0"),
       ]
   });
+
+  console.log( toWei(nativeValue as string || "0"),
+  toWei(contractbalance?.toString() as string || "0"),
+  contractTokenBalance?.toString(),"amount to get", amountToGet);
+
+  console.log(amountToGet,"amount to get", nativeValue, contractbalance, contractTokenBalance);
 
   // Fetch the contract balance
   const fetchContractBalance = async () => {
@@ -100,12 +119,19 @@ const DCHAINDEX: NextPage = () => {
       if (currentFrom === "native") {
         const transaction = prepareContractCall({ 
           contract: dexContract, 
-          method: "function swapEthTotoken(uint256 minTokens) payable", 
-          params: [toWei(minTokens as string || "0")], 
+          method: "function swapEthToToken(address token, uint256 minTokens) payable", 
+          params: [TOKEN_CONTRACT_ADDRESS, toWei(minTokens as string || "0")], 
+          // @ts-ignore
           overrides: { value: toWei(nativeValue as string || "0") }
         });
 
-        await sendTransaction(transaction);
+        console.log(transaction,"transaction");
+
+        await sendTransaction({
+          account: activeAccount!,
+          transaction: transaction
+        });
+
         alert("Swap executed successfully");
       } else {
         const approvetransaction = prepareContractCall({ 
@@ -113,7 +139,11 @@ const DCHAINDEX: NextPage = () => {
           method: "function approve(address spender, uint256 amount) returns (bool)", 
           params: [DEX_CONTRACT_ADDRESS, toWei(tokenValue as string || "0")] 
         });
-        await sendTransaction(approvetransaction);
+
+        await sendTransaction({
+          account: activeAccount!,
+          transaction: approvetransaction
+        });
 
         const transaction = prepareContractCall({ 
           contract: dexContract, 
@@ -121,7 +151,10 @@ const DCHAINDEX: NextPage = () => {
           params: [toWei(tokenValue as string || "0"), toWei(minTokens as string || "0")] 
         });
 
-        await sendTransaction(transaction);
+        await sendTransaction({
+          account: activeAccount!,
+          transaction: transaction
+        });
         alert("Swap executed successfully");
       }
     } catch (error) {
@@ -179,11 +212,11 @@ const DCHAINDEX: NextPage = () => {
             <SwapInput
               current={currentFrom as string}
               type="token"
-              max={tokenBalance?.displayValue}
+              max={tokenBalance ? toEther(tokenBalance) : "0"}
               value={tokenValue as string}
               setValue={setTokenValue}
               tokenSymbol={symbol as string}
-              tokenBalance={tokenBalance?.displayValue}
+              tokenBalance={tokenBalance ? toEther(tokenBalance) : "0"}
             />
           </div>
           {address ? (

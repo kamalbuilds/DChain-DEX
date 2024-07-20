@@ -13,12 +13,16 @@ contract DCHAINV2DEX is ERC20Base {
     event LiquidityRemoved(address indexed provider, address indexed token, uint256 amountEth, uint256 amountToken);
     event Swapped(address indexed swapper, address indexed token, uint256 amountIn, uint256 amountOut, string direction);
 
-    constructor (uint256 _feePercent) ERC20Base(msg.sender, "DCHAINV1DEX", "DCDX") {
+    constructor (uint256 _feePercent) ERC20Base(msg.sender, "DCHAINV2DEX", "DCDXV2") {
         feePercent = _feePercent;
     }
 
     function getTokensInContract(address token) public view returns (uint256) {
         return ERC20Base(token).balanceOf(address(this));
+    }
+
+    function getNativeContractBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 
     function addLiquidity(address token, uint256 _amount) public payable returns (uint256) {
