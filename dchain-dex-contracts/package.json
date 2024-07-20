@@ -1,9 +1,8 @@
 {
   "name": "hardhat-javascript-starter",
   "scripts": {
-    "build": "npx thirdweb@latest detect",
-    "deploy": "npx thirdweb@latest deploy",
-    "release": "npx thirdweb@latest release"
+    "build": "npx hardhat compile",
+    "deploy": "npx thirdweb@latest deploy"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
