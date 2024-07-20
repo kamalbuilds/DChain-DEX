@@ -191,6 +191,7 @@ const DCHAINDEX: NextPage = () => {
           borderRadius: "10px",
           minWidth: "500px",
         }}>
+          <h2 className="text-xl text-red-500 text-center">Swap Native with <span className="text-green-400">ERC-20</span> Tokens</h2>
           <div>
             <SwapInput
               current={currentFrom as string}

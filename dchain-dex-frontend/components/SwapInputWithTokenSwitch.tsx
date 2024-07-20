@@ -54,10 +54,10 @@ export default function SwapInputWithTokenSwitch({
             const token = tokens.find(token => token.symbol === e.target.value);
             setCurrentToken(token!);
           }}
-          className={styles.tokenSelect}
+          className="text-black"
         >
           {tokens.map((token) => (
-            <option key={token.address} value={token.symbol}>
+            <option key={token.address} value={token.symbol} className="text-black">
               {token.symbol}
             </option>
           ))}

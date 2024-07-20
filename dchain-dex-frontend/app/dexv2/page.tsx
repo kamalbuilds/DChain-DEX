@@ -171,6 +171,7 @@ const DCHAINDEXV2: NextPage = () => {
           borderRadius: "10px",
           minWidth: "500px",
         }}>
+        <h2 className="text-xl text-red-500 text-center">Swap with <span className="text-green-400">Multiple</span> Tokens</h2>
         <div>
           <SwapInput
             current={currentFrom as string}
