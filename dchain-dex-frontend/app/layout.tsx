@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "@/styles/globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
 import { createThirdwebClient } from "thirdweb";
 import { IBM_Plex_Mono } from 'next/font/google'
 import { cn } from '@/lib/utils'
-import './globals.css'
 import Navbar from "@/components/Navbar";
 
 const fontHeading = IBM_Plex_Mono({
