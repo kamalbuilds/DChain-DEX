@@ -1,6 +1,36 @@
-import { ConnectWallet } from "@thirdweb-dev/react";
+"use client";
+import { client } from "@/app/layout";
+import {  defineChain, getContract } from "thirdweb";
+import { ConnectButton } from "thirdweb/react";
+import { createWallet, inAppWallet } from "thirdweb/wallets";
+
 
 export default function Navbar() {
+
+
+  // connect to your contract
+   const contract = getContract({ 
+    client, 
+    chain: defineChain(2713017997578000), 
+    address: "0x2AAC535db31DB35D13AECe36Ea7954A2089D55bE"
+  });
+
+  const wallets = [
+    createWallet("io.metamask"),
+    createWallet("com.coinbase.wallet"),
+    inAppWallet({
+      auth: {
+        options: [
+          "email",
+          "google",
+          "apple",
+          "facebook",
+          "phone",
+        ],
+      },
+    }),
+  ];
+
     return (
         <div style={{
             display: "flex",
@@ -10,7 +40,12 @@ export default function Navbar() {
             margin: "10px",
         }}>
             <h1>DChain DEX</h1>
-            <ConnectWallet/>
+            <ConnectButton
+              client={client}
+              wallets={wallets}
+              theme={"dark"}
+              connectModal={{ size: "wide" }}
+            />
         </div>
     )
 }

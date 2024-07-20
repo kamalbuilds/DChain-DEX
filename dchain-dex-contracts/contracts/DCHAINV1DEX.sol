@@ -3,8 +3,8 @@ pragma solidity ^0.8.7;
 
 import "@thirdweb-dev/contracts/base/ERC20Base.sol";
 
-contract DEX is ERC20Base {
-    address public token;
+contract DCHAINV1DEX is ERC20Base {
+    address public token; // this token would be utilsed 
     uint256 public feePercent; // Fee percentage in basis points (100 basis points = 1%)
 
     event LiquidityAdded(address indexed provider, uint256 amountEth, uint256 amountToken);
@@ -65,7 +65,7 @@ contract DEX is ERC20Base {
         uint256 inputReserve,
         uint256 outputReserve
     )
-    public pure returns (uint256) 
+    public view returns (uint256) 
     {
         require(inputReserve > 0 && outputReserve > 0, "Invalid Reserves");
         uint256 inputAmountWithFee = (inputAmount * (10000 - feePercent)) / 10000;
