@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import {  createThirdwebClient, defineChain, getContract } from "thirdweb";
 import { ConnectButton } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
@@ -40,7 +41,9 @@ const client = createThirdwebClient({
             justifyContent: "space-between",
             margin: "10px",
         }}>
-            <h1>DChain DEX</h1>
+            <Link href="/" className="text-red-500 text-2xl">DChain DEX</Link>
+            <Link href="/dex" className="text-blue-600 text-2xl"> DEX V1 </Link>
+            <Link href="/dexv2" className="text-blue-600 text-2xl"> DEX V2 </Link>
             <ConnectButton
               client={client}
               wallets={wallets}

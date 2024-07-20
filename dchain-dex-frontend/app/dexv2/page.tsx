@@ -3,21 +3,32 @@ import { useWalletBalance, useReadContract, useActiveAccount } from "thirdweb/re
 import styles from "../../styles/Home.module.css";
 import { NextPage } from "next";
 import { useEffect, useState } from "react";
-import SwapInput from "@/components/SwapInput";
+import SwapInputWithTokenSwitch from "@/components/SwapInputWithTokenSwitch";
 import { createThirdwebClient, defineChain, getContract, prepareContractCall, sendTransaction, toEther, toWei } from "thirdweb";
+import SwapInput from "@/components/SwapInput";
 
-const DCHAINDEX: NextPage = () => {
+const DCHAINDEXV2: NextPage = () => {
 
   const client = createThirdwebClient({ 
     clientId: process.env.NEXT_PUBLIC_CLIENT_ID!,
   });
 
-  const TOKEN_CONTRACT_ADDRESS = "0x2AAC535db31DB35D13AECe36Ea7954A2089D55bE";
+  const TOKENS = [
+    { symbol: "DUSDC", address: "0x2AAC535db31DB35D13AECe36Ea7954A2089D55bE" },
+    { symbol: "DUSDT", address: "0xE71D50B4Ecbfbe137aEf99247193d2c322bacEA2" },
+  ];
+
   const DEX_CONTRACT_ADDRESS = "0x311C424046c1679274D54663e7e4A054Af0Babb0";
-  // earlier v1 0xB86800BA7D0b25309726511f54F1e3D92457a8E4
 
   const activeAccount = useActiveAccount();
   const address = activeAccount?.address;
+
+  const [selectedToken, setSelectedToken] = useState(TOKENS[0]);
+  const [nativeValue, setNativeValue] = useState<String>("0");
+  const [tokenValue, setTokenValue] = useState<String>("0");
+  const [currentFrom, setCurrentFrom] = useState<String>("native");
+  const [isLoading, setIsLoading] = useState<Boolean>(false);
+  const [minTokens, setMinTokens] = useState<String>("0");
 
   const dexContract = getContract({ 
     client, 
@@ -28,7 +39,7 @@ const DCHAINDEX: NextPage = () => {
   const tokenContract = getContract({
     client,
     chain: defineChain(2713017997578000),
-    address: TOKEN_CONTRACT_ADDRESS
+    address: selectedToken.address
   });
 
   const { data: symbol, isLoading: loadingsymbol } = useReadContract({ 
@@ -43,43 +54,24 @@ const DCHAINDEX: NextPage = () => {
     params: [address!]
   });
 
-  console.log(tokenBalance,"token balance", tokenBalance?.valueOf(),tokenBalance?.toString());
-
-  // Get native balance and LP token balance
   const { data: nativeBalance, isError } = useWalletBalance({
     chain: defineChain(2713017997578000),
     address,
     client,
-    // tokenAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   });
-
-  console.log(nativeBalance,"native",tokenBalance);
 
   const { data: contractTokenBalance } = useReadContract({ 
     contract: dexContract, 
     method: "function getTokensInContract(address token) view returns (uint256)", 
-    params: [TOKEN_CONTRACT_ADDRESS] 
+    params: [selectedToken.address] 
   });
 
-  console.log(contractTokenBalance,"contract tken balance", contractTokenBalance?.toString());
-
-  // State for the contract balance and the values to swap
-  const [contractBalance, setContractBalance] = useState<String>("0");
-  const [nativeValue, setNativeValue] = useState<String>("0");
-  const [tokenValue, setTokenValue] = useState<String>("0");
-  const [currentFrom, setCurrentFrom] = useState<String>("native");
-  const [isLoading, setIsLoading] = useState<Boolean>(false);
-  const [minTokens, setMinTokens] = useState<String>("0");
-
-  const { data: contractbalance} = useReadContract({ 
+  const { data: contractbalance } = useReadContract({ 
     contract: dexContract, 
     method: "function getNativeContractBalance() view returns (uint256)", 
     params: [] 
-  })
+  });
 
-  console.log(contractbalance?.toString(),"contract balance");
-
-  // Get the amount of tokens to get based on the value to swap
   const { data: amountToGet, isLoading: load } = useReadContract({ 
     contract: dexContract, 
     method: "function getAmountOfTokens(uint256 inputAmount, uint256 inputReserve, uint256 outputReserve) view returns (uint256)",
@@ -96,23 +88,14 @@ const DCHAINDEX: NextPage = () => {
       ]
   });
 
-  console.log( toWei(nativeValue as string || "0"),
-  toWei(contractbalance?.toString() as string || "0"),
-  contractTokenBalance?.toString(),"amount to get", amountToGet);
-
-  console.log(amountToGet,"amount to get", nativeValue, contractbalance, contractTokenBalance);
-
-  // Fetch the contract balance
   const fetchContractBalance = async () => {
     try {
-      // const balance = await sdk?.getBalance(DEX_CONTRACT);
-      // setContractBalance(balance?.displayValue || "0");
+      // Update balances if needed
     } catch (error) {
       console.error(error);
     }
   };
 
-  // Execute the swap
   const executeSwap = async () => {
     setIsLoading(true);
     try {
@@ -120,12 +103,10 @@ const DCHAINDEX: NextPage = () => {
         const transaction = prepareContractCall({ 
           contract: dexContract, 
           method: "function swapEthToToken(address token, uint256 minTokens) payable", 
-          params: [TOKEN_CONTRACT_ADDRESS, toWei(minTokens as string || "0")], 
+          params: [selectedToken.address, toWei(minTokens as string || "0")], 
           // @ts-ignore
           overrides: { value: toWei(nativeValue as string || "0") }
         });
-
-        console.log(transaction,"transaction");
 
         await sendTransaction({
           account: activeAccount!,
@@ -165,13 +146,12 @@ const DCHAINDEX: NextPage = () => {
     }
   };
 
-  // Fetch the contract balance and update it every 10 seconds
   useEffect(() => {
     fetchContractBalance();
-    setInterval(fetchContractBalance, 10000);
+    const interval = setInterval(fetchContractBalance, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Update the amount to get based on the value
   useEffect(() => {
     if (!amountToGet) return;
     setMinTokens(toEther(amountToGet));
@@ -191,53 +171,51 @@ const DCHAINDEX: NextPage = () => {
           borderRadius: "10px",
           minWidth: "500px",
         }}>
-          <div>
-            <SwapInput
-              current={currentFrom as string}
-              type="native"
-              max={nativeBalance?.displayValue}
-              value={nativeValue as string}
-              setValue={setNativeValue}
-              tokenSymbol="ETH"
-              tokenBalance={nativeBalance?.displayValue}
-            />
-            <button
-              onClick={() => 
-                currentFrom === "native"
-                  ? setCurrentFrom("token")
-                  : setCurrentFrom("native")
-              }
-              className={styles.toggleButton}
-            >↓</button>
-            <SwapInput
-              current={currentFrom as string}
-              type="token"
-              max={tokenBalance ? toEther(tokenBalance) : "0"}
-              value={tokenValue as string}
-              setValue={setTokenValue}
-              tokenSymbol={symbol as string}
-              tokenBalance={tokenBalance ? toEther(tokenBalance) : "0"}
-            />
+        <div>
+          <SwapInput
+            current={currentFrom as string}
+            type="native"
+            max={nativeBalance?.displayValue}
+            value={nativeValue as string}
+            setValue={setNativeValue}
+            tokenSymbol="ETH"
+            tokenBalance={nativeBalance?.displayValue}
+          />
+          <button
+            onClick={() =>
+              currentFrom === "native"
+                ? setCurrentFrom("token")
+                : setCurrentFrom("native")
+            }
+            className={styles.toggleButton}
+          >
+            ↓↑
+          </button>
+          <SwapInputWithTokenSwitch
+            current={currentFrom as string}
+            type="token"
+            tokens={TOKENS}
+            currentToken={selectedToken}
+            setCurrentToken={setSelectedToken}
+            max={tokenBalance ? toEther(tokenBalance) : "0"}
+            value={tokenValue as string}
+            setValue={setTokenValue}
+            tokenBalance={tokenBalance ? toEther(tokenBalance) : "0"}
+          />
           </div>
-          {address ? (
-            <div style={{ textAlign: "center" }}>
-              <button
-                onClick={executeSwap}
-                disabled={isLoading as boolean}
-                className={styles.swapButton}
-              >{
-                isLoading
-                  ? "Loading..."
-                  : "Swap"  
-              }</button>
-            </div>
-          ) : (
-            <p>Connect wallet to exchange.</p>
-          )}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
+            <p>Minimum tokens to receive: {minTokens}</p>
+          </div>
+          <button
+            onClick={executeSwap}
+            className={styles.swapButton}
+          >
+            {isLoading ? "Swapping..." : "Swap"}
+          </button>
         </div>
       </div>
     </main>
   );
 };
 
-export default DCHAINDEX;
+export default DCHAINDEXV2;
