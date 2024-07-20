@@ -4,10 +4,13 @@ import styles from "../../styles/Home.module.css";
 import { NextPage } from "next";
 import { useEffect, useState } from "react";
 import SwapInput from "@/components/SwapInput";
-import { defineChain, getContract, prepareContractCall, sendTransaction, toEther, toWei } from "thirdweb";
-import { client } from "../layout";
+import { createThirdwebClient, defineChain, getContract, prepareContractCall, sendTransaction, toEther, toWei } from "thirdweb";
 
 const DCHAINDEX: NextPage = () => {
+
+  const client = createThirdwebClient({ 
+    clientId: process.env.NEXT_PUBLIC_CLIENT_ID!,
+  });
 
   const TOKEN_CONTRACT_ADDRESS = "0x2AAC535db31DB35D13AECe36Ea7954A2089D55bE";
   const DEX_CONTRACT_ADDRESS = "0xB86800BA7D0b25309726511f54F1e3D92457a8E4";
@@ -47,7 +50,7 @@ const DCHAINDEX: NextPage = () => {
     // tokenAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   });
 
-  console.log(nativeBalance,"native",address);
+  console.log(nativeBalance,"native",tokenBalance);
 
   const { data: contractTokenBalance } = useReadContract({ 
     contract: dexContract, 

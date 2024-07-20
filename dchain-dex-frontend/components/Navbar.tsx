@@ -1,13 +1,14 @@
 "use client";
-import { client } from "@/app/layout";
-import {  defineChain, getContract } from "thirdweb";
+import {  createThirdwebClient, defineChain, getContract } from "thirdweb";
 import { ConnectButton } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 
 
 export default function Navbar() {
 
-
+const client = createThirdwebClient({
+    clientId: process.env.NEXT_PUBLIC_CLIENT_ID!,
+  });
   // connect to your contract
    const contract = getContract({ 
     client, 

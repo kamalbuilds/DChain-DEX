@@ -25,10 +25,6 @@ const fontBody = IBM_Plex_Mono({
 const inter = Inter({ subsets: ["latin"] });
 
 
-export const client = createThirdwebClient({ 
-  clientId: process.env.NEXT_PUBLIC_CLIENT_ID!,
-});
-
 
 
 export default function RootLayout({
